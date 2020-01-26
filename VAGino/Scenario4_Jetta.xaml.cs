@@ -34,9 +34,6 @@ using MessageAnalyzer;
 using System.Collections.ObjectModel;
 using VAGino.Models;
 using System.Linq;
-using VAGino.ViewModels;
-using Windows.UI.Xaml.Data;
-using Microsoft.Toolkit.Uwp.UI.Controls;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -45,13 +42,12 @@ namespace SerialArduino
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class Scenario3_Jetta : Page, IDisposable
+    public sealed partial class Scenario4_Jetta : Page, IDisposable
     {
 
         // A pointer back to the main page.  This is needed if you want to call methods in MainPage such
         // as NotifyUser()
         private MainPage rootPage = MainPage.Current;
-        private JettaViewModel ViewModel { get; }
 
         // Track Read Operation
         private CancellationTokenSource ReadCancellationTokenSource;
@@ -72,7 +68,6 @@ namespace SerialArduino
         private Dictionary<string, int> _newMessages;
 
         ObservableCollection<MessageRow> Messages { get; set; }
-        public ICollectionView GroupView { get; private set; }
 
         public enum LedState
         {
@@ -80,10 +75,10 @@ namespace SerialArduino
             LedStateOff
         };
 
-        public Scenario3_Jetta()
+        public Scenario4_Jetta()
         {
             this.InitializeComponent();
-            ViewModel = new JettaViewModel();
+
             KeyEventHandler keyeventHandler = new KeyEventHandler(OnTBCommandEnter);
 
             TBCommand.AddHandler(TextBox.KeyDownEvent, keyeventHandler, true);
@@ -91,8 +86,7 @@ namespace SerialArduino
             _messages = new Dictionary<string, int>();
             _newMessages = new Dictionary<string, int>();
             Messages = new ObservableCollection<MessageRow>();
-
-            //LVMessages.ItemsSource = Messages;
+            LVMessages.ItemsSource = Messages;
         }
 
         private void OnTBCommandEnter(object sender, KeyRoutedEventArgs e)
@@ -163,6 +157,60 @@ namespace SerialArduino
             CancelAllIoTasks();
         }
 
+
+        /// <summary>
+        /// Writes a custom command to the device to turn LEDs on/off
+        /// using a DataWriter to the OutputStream
+        /// </summary>
+        /// <param name="ledNumber"></param>
+        /// <param name="ledState"></param>
+        private async void WriteLedCommand(String ledNumber, LedState ledState)
+        {
+            if (EventHandlerForDevice.Current.IsDeviceConnected)
+            {
+                try
+                {
+                    rootPage.NotifyUser("Writing...", NotifyType.StatusMessage);
+
+                    DataWriterObject = new DataWriter(EventHandlerForDevice.Current.Device.OutputStream);
+
+                    switch (ledState)
+                    {
+                        case LedState.LedStateOn:
+                            DataWriterObject.WriteString("ledon " + ledNumber + "\r");
+                            break;
+
+                        case LedState.LedStateOff:
+                            DataWriterObject.WriteString("ledoff " + ledNumber + "\r");
+                            break;
+
+                        default:
+                            break;
+                    }
+
+                    await WriteAsync(WriteCancellationTokenSource.Token);
+                }
+                catch (OperationCanceledException /*exception*/)
+                {
+                    NotifyWriteTaskCanceled();
+                }
+                catch (Exception exception)
+                {
+                    MainPage.Current.NotifyUser(exception.Message.ToString(), NotifyType.ErrorMessage);
+                    Debug.WriteLine(exception.Message.ToString());
+                }
+                finally
+                {
+                    DataWriterObject.DetachStream();
+                    DataWriterObject = null;
+                }
+            }
+            else
+            {
+                Utilities.NotifyDeviceNotConnected();
+            }
+        }
+
         private async Task WriteCommandAsync(String command)
         {
             if (EventHandlerForDevice.Current.IsDeviceConnected)
@@ -229,6 +277,59 @@ namespace SerialArduino
             };
 
             return;
+
+            if (EventHandlerForDevice.Current.IsDeviceConnected)
+            {
+                try
+                {
+                    rootPage.NotifyUser("Getting temperature...", NotifyType.StatusMessage);
+
+                    DataWriterObject = new DataWriter(EventHandlerForDevice.Current.Device.OutputStream);
+                    DataWriterObject.WriteString("temp\r");
+
+                    await WriteAsync(WriteCancellationTokenSource.Token);
+                }
+                catch (OperationCanceledException /*exception*/)
+                {
+                    NotifyWriteTaskCanceled();
+                }
+                catch (Exception exception)
+                {
+                    MainPage.Current.NotifyUser(exception.Message.ToString(), NotifyType.ErrorMessage);
+                    Debug.WriteLine(exception.Message.ToString());
+                }
+                finally
+                {
+                    DataWriterObject.DetachStream();
+                    DataWriterObject = null;
+                }
+
+                try
+                {
+                    TemperatureValue.Text = String.Empty;
+
+                    DataReaderObject = new DataReader(EventHandlerForDevice.Current.Device.InputStream);
+                    await ReadAsync(ReadCancellationTokenSource.Token);
+                }
+                catch (OperationCanceledException /*exception*/)
+                {
+                    NotifyReadTaskCanceled();
+                }
+                catch (Exception exception)
+                {
+                    MainPage.Current.NotifyUser(exception.Message.ToString(), NotifyType.ErrorMessage);
+                    Debug.WriteLine(exception.Message.ToString());
+                }
+                finally
+                {
+                    DataReaderObject.DetachStream();
+                    DataReaderObject = null;
+                }
+            }
+            else
+            {
+                Utilities.NotifyDeviceNotConnected();
+            }
         }
 
         /// <summary>
@@ -455,8 +556,6 @@ namespace SerialArduino
                         {
                             _newMessages[canMessage]++;
                             Messages.First(row => row.Message.Equals(canMessage)).Count++;
-                            AddMessage(canM);
-
                         }
                     }
                     else
@@ -469,18 +568,11 @@ namespace SerialArduino
                             Message = canMessage,
                             Count = 1
                         });
-
-                        AddMessage(canM);
-                    }
+                    }                   
 
                 }
                 //await WriteConsole(m);
             }
-        }
-
-        private void AddMessage(CANMessage canM)
-        {
-            ViewModel.AddCanMessage(canM);
         }
 
         string _canTemp;
@@ -690,9 +782,6 @@ namespace SerialArduino
         {
             Messages.Clear();
             _newMessages.Clear();
-            ViewModel.ClearGroups();
-
-            CreateCollectionView(DataGridGroupd);
         }
 
         private void OnStopTracking(object sender, RoutedEventArgs e)
@@ -703,6 +792,8 @@ namespace SerialArduino
         private void OnSort(object sender, RoutedEventArgs e)
         {
             Messages = new ObservableCollection<MessageRow>(Messages.OrderBy(m => m.Message));
+            LVMessages.ItemsSource = Messages;
+
         }
 
         private async void UpdateData_Click(object sender, RoutedEventArgs e)
@@ -714,46 +805,5 @@ namespace SerialArduino
         {
             await SendCommand(Commands.LFW_DOWN);
         }
-
-        private void OnDataGridLoaded(object sender, RoutedEventArgs e)
-        {
-            CreateCollectionView(sender as DataGrid);
-        }
-
-        private void CreateCollectionView(DataGrid grid)
-        {
-            var cvs = new CollectionViewSource();
-            cvs.Source = ViewModel.Messages;
-            cvs.IsSourceGrouped = true;
-
-            GroupView = cvs.View;
-            grid.ItemsSource = GroupView;
-        }
-
-
-        ICollectionViewGroup _group;
-
-        private void OnLoadingRowGroup(object sender, DataGridRowGroupHeaderEventArgs e)
-        {
-            ICollectionViewGroup group = e.RowGroupHeader.CollectionViewGroup;
-            _group = group;
-
-            Binding myBinding = new Binding();
-            myBinding.Source = group.Group;
-            myBinding.Path = new PropertyPath("KeyData");
-            myBinding.Mode = BindingMode.OneWay;
-            myBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
-            BindingOperations.SetBinding(e.RowGroupHeader, DataGridRowGroupHeader.PropertyValueProperty, myBinding);
-        }
-
-        private void BtnAddTestRow_Click(object sender, RoutedEventArgs e)
-        {
-            var r = new Random();
-            var i = r.Next(0, 9);
-            var id = r.Next(0, 9);
-            var message = new CANMessage($"7{id}D 8 {i} 62 2 8C 42 AA AA AA");
-            AddMessage(message);
-        }
-
     }
 }
