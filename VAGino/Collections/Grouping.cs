@@ -30,6 +30,6 @@ namespace ReadlnLibrary.Core.Collections
 
         public TKey Key { get; }
 
-        public string KeyData => $"{Key} {Count}";
+        public string KeyData => $"{Key}  ({Count})  ";
     }
 }

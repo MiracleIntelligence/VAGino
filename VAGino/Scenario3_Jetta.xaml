@@ -24,8 +24,11 @@
                               IsSourceGrouped="True"
                               Source="{x:Bind ViewModel.Messages}"/>-->
     </Page.Resources>
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Margin="12,20,12,12">
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+          VerticalAlignment="Stretch">
+        <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" 
+              VerticalAlignment="Stretch"
+              Margin="12,20,12,12">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -38,7 +41,7 @@
             <Grid x:Name="LEDTempScrollViewer" 
                   VerticalAlignment="Stretch"
                   Grid.Row="1"                      
-                  Margin="0,0,0,100">
+                  Margin="5">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="400"/>
                     <RowDefinition Height="Auto"/>
@@ -53,7 +56,6 @@
                                    LoadingRowGroup="OnLoadingRowGroup" 
                                    RowGroupHeaderPropertyNameAlternative="ID"
                                    Loaded="OnDataGridLoaded"
-                                   Height="500" 
                                    Margin="12"
                                    CanUserSortColumns="False"
                                    AutoGenerateColumns="False">
@@ -111,19 +113,20 @@
                     <Button x:Name="ClearButton" Content="Clear" Margin="10" 
                             Click="OnClearClick" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
                     <Button x:Name="Sort" Content="Sort" VerticalAlignment="Bottom" Margin="10" Click="OnSort"/>
-                    <Button x:Name="TemperatureButton" Content="Start tracking" Margin="10" Click="OnStartTracking" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
-                    <Button x:Name="StopButton" Content="Stop tracking" Margin="10" Click="OnStopTracking" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
+                    <Button x:Name="BtnStart" Content="Start tracking" Margin="10" Click="OnStartTracking" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
+                    <Button x:Name="BtnStop" Content="Stop tracking" Margin="10" Click="OnStopTracking" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
                     <Button x:Name="BtnAddTestRow" Content="Add row" Margin="10" Click="BtnAddTestRow_Click" VerticalAlignment="Bottom"/>
 
                     <TextBox x:Name="TemperatureValue" Text="" Margin="10" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
                 </StackPanel>
 
                 <ScrollViewer x:Name="SVConsole"
+                              Background="DarkSlateGray"
                               VerticalAlignment="Stretch"
-                              Grid.Row="2"
-                              MinHeight="200"
-                              Margin="5,5">
-                    <RichTextBlock x:Name="RTBConsole"                                   
+                              Grid.Row="2">
+                    <RichTextBlock x:Name="RTBConsole"    
+                                   
+                              Margin="5,5"
                                        HorizontalAlignment="Left"                                       
                                        VerticalAlignment="Stretch"
                                        Width="500"/>
@@ -146,7 +149,7 @@
 
             <!-- Status Block for providing messages to the user.  Use the
              NotifyUser() method to populate the message -->
-            <TextBlock x:Name="StatusBlock" Grid.Row="4" Margin="12, 10, 12, 10" Visibility="Collapsed"/>
+            <TextBlock x:Name="StatusBlock" Grid.Row="4" Margin="5" Visibility="Collapsed"/>
         </Grid>
     </Grid>
 </Page>

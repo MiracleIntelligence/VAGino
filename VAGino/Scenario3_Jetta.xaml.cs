@@ -131,6 +131,9 @@ namespace SerialArduino
             {
                 //    LEDTempScrollViewer.Visibility = Visibility.Collapsed;
                 MainPage.Current.NotifyUser("Device is not connected", NotifyType.ErrorMessage);
+
+                BtnStart.IsEnabled = false;
+                BtnStop.IsEnabled = false;
             }
             else
             {
@@ -148,6 +151,9 @@ namespace SerialArduino
                 //EventHandlerForDevice.Current.Device.Handshake = SerialHandshake.None;
                 //EventHandlerForDevice.Current.Device.WriteTimeout = TimeSpan.FromMilliseconds(500);
                 //EventHandlerForDevice.Current.Device.ReadTimeout = TimeSpan.FromMilliseconds(500);
+
+                BtnStart.IsEnabled = true;
+                BtnStop.IsEnabled = false;
             }
 
         }
@@ -217,7 +223,9 @@ namespace SerialArduino
         {
             try
             {
-                TemperatureButton.IsEnabled = false;
+                BtnStart.IsEnabled = false;
+                BtnStop.IsEnabled = true;
+
                 ReadCancellationTokenSource = new CancellationTokenSource();
                 DataReaderObject = new DataReader(EventHandlerForDevice.Current.Device.InputStream);
                 await ReadAsync(ReadCancellationTokenSource.Token).ConfigureAwait(true);
@@ -225,7 +233,8 @@ namespace SerialArduino
             catch (OperationCanceledException ex)
             {
                 Debug.WriteLine("Stopped");
-                TemperatureButton.IsEnabled = true;
+                BtnStart.IsEnabled = true;
+                BtnStop.IsEnabled = false;
             };
 
             return;
@@ -305,47 +314,13 @@ namespace SerialArduino
                         {
                             await ProcessMessage(text);
                         }));
-                        //System.Diagnostics.Debug.WriteLine(recvdtxt);
-                        //this.textBoxRecvdText.Text = recvdtxt;
                     }
                     catch (Exception ex)
                     {
                         System.Diagnostics.Debug.WriteLine("ReadAsync: " + ex.Message);
                     }
                 }
-
-                //String msg = DataReaderObject.ReadString(bytesRead);
-                //byte[] buffer = new byte[bytesRead];
-
-
-                //DataReaderObject.ReadBytes(buffer);
-                //for (int i = 0; i < bytesRead; i++)
-                //{
-                //    if (_buffer.Count == 8)
-                //    {
-                //        if (_buffer)
-                //    }
-                //}
-
-                //if (Convert.ToInt32(buffer) == 255)
-                //{
-
-                //}
-                //string text = System.Text.Encoding.UTF8.GetString(buffer);
-                //string textb64 = Convert.ToBase64String(buffer);
-                //ProcessMessage(msg);
-                //TemperatureValue.Text = temp.Trim() + "°C";
             }
-
-            //foreach (var msg in _emulator.GetMessage())
-            //{
-            //    await ProcessMessage(msg);
-            //    //await Task.Delay(100).ConfigureAwait(true);
-            //}
-            //}
-
-            //rootPage.NotifyUser("Read completed - " + bytesRead.ToString() + " bytes were read", NotifyType.StatusMessage);
-
         }
 
         private async Task ReadOnceAsync(CancellationToken cancellationToken)
@@ -690,6 +665,7 @@ namespace SerialArduino
         {
             Messages.Clear();
             _newMessages.Clear();
+
             ViewModel.ClearGroups();
 
             CreateCollectionView(DataGridGroupd);
@@ -698,6 +674,8 @@ namespace SerialArduino
         private void OnStopTracking(object sender, RoutedEventArgs e)
         {
             ReadCancellationTokenSource.Cancel();
+            BtnStop.IsEnabled = false;
+            BtnStart.IsEnabled = true;
         }
 
         private void OnSort(object sender, RoutedEventArgs e)
@@ -737,6 +715,8 @@ namespace SerialArduino
         {
             ICollectionViewGroup group = e.RowGroupHeader.CollectionViewGroup;
             _group = group;
+
+            // To update items count in group header
 
             Binding myBinding = new Binding();
             myBinding.Source = group.Group;

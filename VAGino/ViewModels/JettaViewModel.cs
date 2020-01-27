@@ -15,31 +15,31 @@ namespace VAGino.ViewModels
         public GroupedObservableCollection<string, MessageRow> Messages { get; private set; }
         public object AddMessage { get; internal set; }
 
-        public int Count { get; set; }
-
         public JettaViewModel()
         {
 
-            var messages = new List<CANMessage>
-            {
-                new CANMessage("7ED 8 4 62 2 8C 42 AA AA AA"),
-                new CANMessage("7AD 8 4 62 2 8C 42 AA AA AA"),
-                new CANMessage("70D 8 4 62 2 8C 42 AA AA AA"),
-                new CANMessage("72D 8 4 62 2 8C 42 AA AA AA"),
-                new CANMessage("73D 8 4 62 2 8C 42 AA AA AA"),
-                new CANMessage("72D 8 4 62 2 8C 42 AA AA AA"),
-                new CANMessage("71D 8 4 62 2 8C 42 AA AA AA"),
-                new CANMessage("73D 8 4 62 2 8C 42 AA AA AA"),
-                new CANMessage("72D 8 4 62 2 8C 42 AA AA AA"),
-                new CANMessage("7BD 8 4 62 2 8C 42 AA AA AA"),
-                new CANMessage("7FD 8 4 62 2 8C 42 AA AA AA"),
-                new CANMessage("7FD 8 4 62 2 8C 42 AA AA AA"),
-                new CANMessage("7ED 8 4 62 2 8C 42 AA AA AA"),
-                new CANMessage("7ED 8 4 62 2 8C 42 AA AA AA"),
-            };
-            var rows = messages.Select(m => new MessageRow(m)).ToList();
+            //var messages = new List<CANMessage>
+            //{
+            //    new CANMessage("7ED 8 4 62 2 8C 42 AA AA AA"),
+            //    new CANMessage("7AD 8 4 62 2 8C 42 AA AA AA"),
+            //    new CANMessage("70D 8 4 62 2 8C 42 AA AA AA"),
+            //    new CANMessage("72D 8 4 62 2 8C 42 AA AA AA"),
+            //    new CANMessage("73D 8 4 62 2 8C 42 AA AA AA"),
+            //    new CANMessage("72D 8 4 62 2 8C 42 AA AA AA"),
+            //    new CANMessage("71D 8 4 62 2 8C 42 AA AA AA"),
+            //    new CANMessage("73D 8 4 62 2 8C 42 AA AA AA"),
+            //    new CANMessage("72D 8 4 62 2 8C 42 AA AA AA"),
+            //    new CANMessage("7BD 8 4 62 2 8C 42 AA AA AA"),
+            //    new CANMessage("7FD 8 4 62 2 8C 42 AA AA AA"),
+            //    new CANMessage("7FD 8 4 62 2 8C 42 AA AA AA"),
+            //    new CANMessage("7ED 8 4 62 2 8C 42 AA AA AA"),
+            //    new CANMessage("7ED 8 4 62 2 8C 42 AA AA AA"),
+            //};
+            //var rows = messages.Select(m => new MessageRow(m)).ToList();
 
-            Messages = new GroupedObservableCollection<string, MessageRow>((m) => m.Id, rows);
+            //Messages = new GroupedObservableCollection<string, MessageRow>((m) => m.Id, rows);
+
+            ClearGroups();
         }
 
         internal void AddCanMessage(CANMessage message)
@@ -56,19 +56,12 @@ namespace VAGino.ViewModels
             }
             var row = new MessageRow(message);
             Messages.Add(row);
-
-            //if (Messages.EnumerateItems().Count() == 1)
-            //{
-            //    RaisePropertyChanged(nameof(Messages));
-            //}
-
-            Count++;
-            RaisePropertyChanged(nameof(Count));
         }
 
         internal void ClearGroups()
         {
             Messages = new GroupedObservableCollection<string, MessageRow>((m) => m.Id);
+            //Messages.ClearItems();
         }
     }
 }
