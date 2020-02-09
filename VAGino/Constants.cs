@@ -47,6 +47,14 @@ namespace SerialArduino
     {
         public static List<string> IDFilters = new List<string>
         {
+            "D0",
+            "721",
+            "723",
+            "72E",
+            "72F",
+            "720",
+            "5DC",
+            "5E0",
             "1AC",
             "280",
             "3B1",
@@ -56,12 +64,16 @@ namespace SerialArduino
             "420",
             "440",
             "448",
-            "482",
+            "482",            
             "4A8",
             "4A0",
             "548",
             "58C",
-            "7D0"
+            "7D0",
+            "10",
+            "11",
+            "18",
+            "19"
             //"380",
             //"48E",
             //"AE",

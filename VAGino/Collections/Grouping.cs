@@ -2,7 +2,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-
+using VAGino.Models;
 
 namespace ReadlnLibrary.Core.Collections
 {
@@ -30,6 +30,6 @@ namespace ReadlnLibrary.Core.Collections
 
         public TKey Key { get; }
 
-        public string KeyData => $"{Key}  ({Count})  ";
+        public string KeyData => $"{Key}  ({this.Sum(i => (i as MessageRow).Count)})  ";
     }
 }

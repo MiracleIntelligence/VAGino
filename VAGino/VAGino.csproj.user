@@ -6,5 +6,13 @@
   </PropertyGroup>
   <PropertyGroup>
     <ProjectView>ShowAllFiles</ProjectView>
+    <Source>C:\dev\MI\Projects\Jetta\Resources\Page-1\Page-1\Android-Wear.png</Source>
+    <SmallTileSource>C:\dev\MI\Projects\Jetta\Resources\Page-1\Page-1\Android-Wear.png</SmallTileSource>
+    <MediumTileSource>C:\dev\MI\Projects\Jetta\Resources\Page-1\Page-1\Android-Wear.png</MediumTileSource>
+    <WideTileSource>C:\dev\MI\Projects\Jetta\Resources\Page-1\Page-1\Android-Wear.png</WideTileSource>
+    <LargeTileSource>C:\dev\MI\Projects\Jetta\Resources\Page-1\Page-1\Android-Wear.png</LargeTileSource>
+    <AppIconSource>C:\dev\MI\Projects\Jetta\Resources\Page-1\Page-1\Android-Wear.png</AppIconSource>
+    <SplashScreenSource>C:\dev\MI\Projects\Jetta\Resources\Page-1\Page-1\Android-Wear.png</SplashScreenSource>
+    <PackageLogoSource>C:\dev\MI\Projects\Jetta\Resources\Page-1\Page-1\Android-Wear.png</PackageLogoSource>
   </PropertyGroup>
 </Project>
