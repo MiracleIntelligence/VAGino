@@ -1,179 +1,56 @@
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
-
-using Windows.UI.Xaml;
-using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Navigation;
-using SDKTemplate;
+﻿using GalaSoft.MvvmLight;
 
 using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 
 using Windows.ApplicationModel;
-using Windows.Foundation;
-
-using Windows.UI.Core;
-
 using Windows.Devices.Enumeration;
-using Windows.Devices.SerialCommunication;
-using SerialArduino;
+using Windows.Foundation;
+using Windows.UI.Core;
+using Windows.UI.Xaml;
 
-// The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234238
-
-namespace SerialArduino
+namespace VAGino.ViewModels
 {
-    /// <summary>
-    /// Demonstrates how to connect to a Serial Device and respond to device disconnects, app suspending and resuming events.
-    /// 
-    /// To use this sample with your device:
-    /// 1) Include the device in the Package.appxmanifest. For instructions, see Package.appxmanifest documentation.
-    /// 2) Create a DeviceWatcher object for your device. See the InitializeDeviceWatcher method in this sample.
-    /// </summary>
-    public sealed partial class Scenario1_ConnectDisconnect : Page
+    public class ConnectionService
     {
-        private const String ButtonNameDisconnectFromDevice = "Disconnect from device";
-        private const String ButtonNameDisableReconnectToDevice = "Do not automatically reconnect to device that was just closed";
+        public event EventHandler<DeviceListEntry> DeviceAdded;
+        public event EventHandler<DeviceListEntry> DeviceRemoved;
 
-        // Pointer back to the main page
-        private MainPage rootPage = MainPage.Current;
-
-        private SuspendingEventHandler appSuspendEventHandler;
-        private EventHandler<Object> appResumeEventHandler;
-
-        private ObservableCollection<DeviceListEntry> listOfDevices;
-
-        private Dictionary<DeviceWatcher, String> mapDeviceWatchersToDeviceSelector;
         private Boolean watchersSuspended;
         private Boolean watchersStarted;
 
         // Has all the devices enumerated by the device watcher?
         private Boolean isAllDevicesEnumerated;
 
-        public Scenario1_ConnectDisconnect()
-        {
-            this.InitializeComponent();
+        private SuspendingEventHandler appSuspendEventHandler;
+        private EventHandler<Object> appResumeEventHandler;
 
-            listOfDevices = new ObservableCollection<DeviceListEntry>();
+        public ObservableCollection<DeviceListEntry> Devices;
+        private Dictionary<DeviceWatcher, String> mapDeviceWatchersToDeviceSelector;
+        private const String ButtonNameDisconnectFromDevice = "Disconnect from device";
+        private const String ButtonNameDisableReconnectToDevice = "Do not automatically reconnect to device that was just closed";
+
+
+        public string ButtonDisconnectFromDeviceContent { get; set; }
+        public int ConnectDevicesSelectedIndex { get; set; }
+        // Pointer back to the main page
+        private MainPage rootPage = MainPage.Current;
+
+        public bool EnableConnect { get; set; }
+
+        public ConnectionService()
+        {
+            Devices = new ObservableCollection<DeviceListEntry>();
 
             mapDeviceWatchersToDeviceSelector = new Dictionary<DeviceWatcher, String>();
+
             watchersStarted = false;
             watchersSuspended = false;
 
             isAllDevicesEnumerated = false;
         }
-
-        /// <summary>
-        /// Invoked when this page is about to be displayed in a Frame.
-        /// 
-        /// Create the DeviceWatcher objects when the user navigates to this page so the UI list of devices is populated.
-        /// </summary>
-        /// <param name="eventArgs">Event data that describes how this page was reached.  The Parameter
-        /// property is typically used to configure the page.</param>
-        protected override void OnNavigatedTo(NavigationEventArgs eventArgs)
-        {
-            // If we are connected to the device or planning to reconnect, we should disable the list of devices
-            // to prevent the user from opening a device without explicitly closing or disabling the auto reconnect
-            if (EventHandlerForDevice.Current.IsDeviceConnected
-                || (EventHandlerForDevice.Current.IsEnabledAutoReconnect
-                && EventHandlerForDevice.Current.DeviceInformation != null))
-            {
-                UpdateConnectDisconnectButtonsAndList(false);
-
-                // These notifications will occur if we are waiting to reconnect to device when we start the page
-                EventHandlerForDevice.Current.OnDeviceConnected = this.OnDeviceConnected;
-                EventHandlerForDevice.Current.OnDeviceClose = this.OnDeviceClosing;
-            }
-            else
-            {
-                UpdateConnectDisconnectButtonsAndList(true);
-            }
-
-            // Begin watching out for events
-            StartHandlingAppEvents();
-
-            // Initialize the desired device watchers so that we can watch for when devices are connected/removed
-            InitializeDeviceWatchers();
-            StartDeviceWatchers();
-
-            DeviceListSource.Source = listOfDevices;
-        }
-
-        /// <summary>
-        /// Unregister from App events and DeviceWatcher events because this page will be unloaded.
-        /// </summary>
-        /// <param name="eventArgs"></param>
-        protected override void OnNavigatedFrom(NavigationEventArgs eventArgs)
-        {
-            StopDeviceWatchers();
-            StopHandlingAppEvents();
-
-            // We no longer care about the device being connected
-            EventHandlerForDevice.Current.OnDeviceConnected = null;
-            EventHandlerForDevice.Current.OnDeviceClose = null;
-        }
-
-        private async void ConnectToDevice_Click(Object sender, RoutedEventArgs eventArgs)
-        {
-            var selection = ConnectDevices.SelectedItems;
-            DeviceListEntry entry = null;
-
-            if (selection.Count > 0)
-            {
-                var obj = selection[0];
-                entry = (DeviceListEntry)obj;
-
-                if (entry != null)
-                {
-                    // Create an EventHandlerForDevice to watch for the device we are connecting to
-                    EventHandlerForDevice.CreateNewEventHandlerForDevice();
-
-                    // Get notified when the device was successfully connected to or about to be closed
-                    EventHandlerForDevice.Current.OnDeviceConnected = this.OnDeviceConnected;
-                    EventHandlerForDevice.Current.OnDeviceClose = this.OnDeviceClosing;
-
-                    // It is important that the FromIdAsync call is made on the UI thread because the consent prompt, when present,
-                    // can only be displayed on the UI thread. Since this method is invoked by the UI, we are already in the UI thread.
-                    Boolean openSuccess = await EventHandlerForDevice.Current.OpenDeviceAsync(entry.DeviceInformation, entry.DeviceSelector);
-
-                    // Disable connect button if we connected to the device
-                    UpdateConnectDisconnectButtonsAndList(!openSuccess);
-                }
-            }
-        }
-
-        private void DisconnectFromDevice_Click(Object sender, RoutedEventArgs eventArgs)
-        {
-            var selection = ConnectDevices.SelectedItems;
-            DeviceListEntry entry = null;
-
-            // Prevent auto reconnect because we are voluntarily closing it
-            // Re-enable the ConnectDevice list and ConnectToDevice button if the connected/opened device was removed.
-            EventHandlerForDevice.Current.IsEnabledAutoReconnect = false;
-
-            if (selection.Count > 0)
-            {
-                var obj = selection[0];
-                entry = (DeviceListEntry)obj;
-
-                if (entry != null)
-                {
-                    EventHandlerForDevice.Current.CloseDevice();
-                }
-            }
-
-            UpdateConnectDisconnectButtonsAndList(true);
-        }
-
         /// <summary>
         /// Initialize device watchers to look for the Serial Arduino device
         ///
@@ -188,11 +65,75 @@ namespace SerialArduino
 
             // Create a device watcher to look for instances of the Serial Device that match the device selector
             // used earlier.
-            
+
             var deviceWatcher = DeviceInformation.CreateWatcher(deviceSelector);
 
             // Allow the EventHandlerForDevice to handle device watcher events that relates or effects our device (i.e. device removal, addition, app suspension/resume)
             AddDeviceWatcher(deviceWatcher, deviceSelector);
+        }
+        public async Task<bool> ConnectToDevice(DeviceListEntry entry)
+        {
+            if (entry != null)
+            {
+                // Create an EventHandlerForDevice to watch for the device we are connecting to
+                EventHandlerForDevice.CreateNewEventHandlerForDevice();
+
+                // Get notified when the device was successfully connected to or about to be closed
+                EventHandlerForDevice.Current.OnDeviceConnected = this.OnDeviceConnected;
+                EventHandlerForDevice.Current.OnDeviceClose = this.OnDeviceClosing;
+
+                // It is important that the FromIdAsync call is made on the UI thread because the consent prompt, when present,
+                // can only be displayed on the UI thread. Since this method is invoked by the UI, we are already in the UI thread.
+                Boolean openSuccess = await EventHandlerForDevice.Current.OpenDeviceAsync(entry.DeviceInformation, entry.DeviceSelector);
+
+            }
+
+            return false;
+        }
+
+        public void DisconnectFromDevice(DeviceListEntry entry)
+        {
+            if (entry != null)
+            {
+                EventHandlerForDevice.Current.CloseDevice();
+            }
+        }
+
+        public void OnNavigatedTo()
+        {
+            // If we are connected to the device or planning to reconnect, we should disable the list of devices
+            // to prevent the user from opening a device without explicitly closing or disabling the auto reconnect
+            if (EventHandlerForDevice.Current.IsDeviceConnected
+                || (EventHandlerForDevice.Current.IsEnabledAutoReconnect
+                && EventHandlerForDevice.Current.DeviceInformation != null))
+            {
+                EnableConnect = false;
+
+                // These notifications will occur if we are waiting to reconnect to device when we start the page
+                EventHandlerForDevice.Current.OnDeviceConnected = this.OnDeviceConnected;
+                EventHandlerForDevice.Current.OnDeviceClose = this.OnDeviceClosing;
+            }
+            else
+            {
+                EnableConnect = true;
+            }
+
+            // Begin watching out for events
+            StartHandlingAppEvents();
+
+            // Initialize the desired device watchers so that we can watch for when devices are connected/removed
+            InitializeDeviceWatchers();
+            StartDeviceWatchers();
+        }
+
+        public void OnNavigatedFrom()
+        {
+            StopDeviceWatchers();
+            StopHandlingAppEvents();
+
+            // We no longer care about the device being connected
+            EventHandlerForDevice.Current.OnDeviceConnected = null;
+            EventHandlerForDevice.Current.OnDeviceClose = null;
         }
 
         private void StartHandlingAppEvents()
@@ -268,39 +209,9 @@ namespace SerialArduino
             watchersStarted = false;
         }
 
-        /// <summary>
-        /// Creates a DeviceListEntry for a device and adds it to the list of devices in the UI
-        /// </summary>
-        /// <param name="deviceInformation">DeviceInformation on the device to be added to the list</param>
-        /// <param name="deviceSelector">The AQS used to find this device</param>
-        private void AddDeviceToList(DeviceInformation deviceInformation, String deviceSelector)
-        {
-            // search the device list for a device with a matching interface ID
-            var match = FindDevice(deviceInformation.Id);
-
-            // Add the device if it's new
-            if (match == null)
-            {
-                // Create a new element for this device interface, and queue up the query of its
-                // device information
-                match = new DeviceListEntry(deviceInformation, deviceSelector);
-
-                // Add the new element to the end of the list of devices
-                listOfDevices.Add(match);
-            }
-        }
-
-        private void RemoveDeviceFromList(String deviceId)
-        {
-            // Removes the device entry from the interal list; therefore the UI
-            var deviceEntry = FindDevice(deviceId);
-
-            listOfDevices.Remove(deviceEntry);
-        }
-
         private void ClearDeviceEntries()
         {
-            listOfDevices.Clear();
+            Devices.Clear();
         }
 
         /// <summary>
@@ -313,7 +224,7 @@ namespace SerialArduino
         {
             if (deviceId != null)
             {
-                foreach (DeviceListEntry entry in listOfDevices)
+                foreach (DeviceListEntry entry in Devices)
                 {
                     if (entry.DeviceInformation.Id == deviceId)
                     {
@@ -324,6 +235,7 @@ namespace SerialArduino
 
             return null;
         }
+
 
         /// <summary>
         /// We must stop the DeviceWatchers because device watchers will continue to raise events even if
@@ -382,6 +294,7 @@ namespace SerialArduino
         /// <param name="deviceInformation"></param>
         private async void OnDeviceAdded(DeviceWatcher sender, DeviceInformation deviceInformation)
         {
+
             await rootPage.Dispatcher.RunAsync(
                 CoreDispatcherPriority.Normal,
                 new DispatchedHandler(() =>
@@ -411,7 +324,7 @@ namespace SerialArduino
                     {
                         SelectDeviceInList(EventHandlerForDevice.Current.DeviceInformation.Id);
 
-                        ButtonDisconnectFromDevice.Content = ButtonNameDisconnectFromDevice;
+                        ButtonDisconnectFromDeviceContent = ButtonNameDisconnectFromDevice;
 
                         rootPage.NotifyUser("Connected to - " +
                                             EventHandlerForDevice.Current.DeviceInformation.Id, NotifyType.StatusMessage);
@@ -421,7 +334,7 @@ namespace SerialArduino
                     else if (EventHandlerForDevice.Current.IsEnabledAutoReconnect && EventHandlerForDevice.Current.DeviceInformation != null)
                     {
                         // We will be reconnecting to a device
-                        ButtonDisconnectFromDevice.Content = ButtonNameDisableReconnectToDevice;
+                        ButtonDisconnectFromDeviceContent = ButtonNameDisableReconnectToDevice;
 
                         rootPage.NotifyUser("Waiting to reconnect to device -  " + EventHandlerForDevice.Current.DeviceInformation.Id, NotifyType.StatusMessage);
                     }
@@ -431,6 +344,41 @@ namespace SerialArduino
                     }
                 }));
         }
+
+        /// <summary>
+        /// Creates a DeviceListEntry for a device and adds it to the list of devices in the UI
+        /// </summary>
+        /// <param name="deviceInformation">DeviceInformation on the device to be added to the list</param>
+        /// <param name="deviceSelector">The AQS used to find this device</param>
+        private void AddDeviceToList(DeviceInformation deviceInformation, String deviceSelector)
+        {
+            // search the device list for a device with a matching interface ID
+            var match = FindDevice(deviceInformation.Id);
+
+            // Add the device if it's new
+            if (match == null)
+            {
+                // Create a new element for this device interface, and queue up the query of its
+                // device information
+                match = new DeviceListEntry(deviceInformation, deviceSelector);
+
+                // Add the new element to the end of the list of devices
+                Devices.Add(match);
+
+                DeviceAdded?.Invoke(this, match);
+            }
+        }
+
+        private void RemoveDeviceFromList(String deviceId)
+        {
+            // Removes the device entry from the interal list; therefore the UI
+            var deviceEntry = FindDevice(deviceId);
+
+            Devices.Remove(deviceEntry);
+
+            DeviceRemoved?.Invoke(this, deviceEntry);
+        }
+
 
         /// <summary>
         /// If all the devices have been enumerated, select the device in the list we connected to. Otherwise let the EnumerationComplete event
@@ -445,7 +393,7 @@ namespace SerialArduino
             {
                 SelectDeviceInList(EventHandlerForDevice.Current.DeviceInformation.Id);
 
-                ButtonDisconnectFromDevice.Content = ButtonNameDisconnectFromDevice;
+                ButtonDisconnectFromDeviceContent = ButtonNameDisconnectFromDevice;
             }
 
             EventHandlerForDevice.Current.ConfigureCurrentlyConnectedDevice();
@@ -453,6 +401,28 @@ namespace SerialArduino
             rootPage.NotifyUser("Connected to - " +
                                 EventHandlerForDevice.Current.DeviceInformation.Id, NotifyType.StatusMessage);
         }
+
+        /// <summary>
+        /// Selects the item in the UI's listbox that corresponds to the provided device id. If there are no
+        /// matches, we will deselect anything that is selected.
+        /// </summary>
+        /// <param name="deviceIdToSelect">The device id of the device to select on the list box</param>
+        private void SelectDeviceInList(String deviceIdToSelect)
+        {
+            // Don't select anything by default.
+            ConnectDevicesSelectedIndex = -1;
+
+            for (int deviceListIndex = 0; deviceListIndex < Devices.Count; deviceListIndex++)
+            {
+                if (Devices[deviceListIndex].DeviceInformation.Id == deviceIdToSelect)
+                {
+                    ConnectDevicesSelectedIndex = deviceListIndex;
+
+                    break;
+                }
+            }
+        }
+
 
         /// <summary>
         /// The device was closed. If we will autoreconnect to the device, reflect that in the UI
@@ -467,44 +437,11 @@ namespace SerialArduino
                 {
                     // We were connected to the device that was unplugged, so change the "Disconnect from device" button
                     // to "Do not reconnect to device"
-                    if (ButtonDisconnectFromDevice.IsEnabled && EventHandlerForDevice.Current.IsEnabledAutoReconnect)
-                    {
-                        ButtonDisconnectFromDevice.Content = ButtonNameDisableReconnectToDevice;
-                    }
+                    //if (ButtonDisconnectFromDevice.IsEnabled && EventHandlerForDevice.Current.IsEnabledAutoReconnect)
+                    //{
+                    //    ButtonDisconnectFromDevice.Content = ButtonNameDisableReconnectToDevice;
+                    //}
                 }));
-        }
-
-        /// <summary>
-        /// Selects the item in the UI's listbox that corresponds to the provided device id. If there are no
-        /// matches, we will deselect anything that is selected.
-        /// </summary>
-        /// <param name="deviceIdToSelect">The device id of the device to select on the list box</param>
-        private void SelectDeviceInList(String deviceIdToSelect)
-        {
-            // Don't select anything by default.
-            ConnectDevices.SelectedIndex = -1;
-
-            for (int deviceListIndex = 0; deviceListIndex < listOfDevices.Count; deviceListIndex++)
-            {
-                if (listOfDevices[deviceListIndex].DeviceInformation.Id == deviceIdToSelect)
-                {
-                    ConnectDevices.SelectedIndex = deviceListIndex;
-
-                    break;
-                }
-            }
-        }
-
-        /// <summary>
-        /// When ButtonConnectToDevice is disabled, ConnectDevices list will also be disabled.
-        /// </summary>
-        /// <param name="enableConnectButton">The state of ButtonConnectToDevice</param>
-        private void UpdateConnectDisconnectButtonsAndList(Boolean enableConnectButton)
-        {
-            ButtonConnectToDevice.IsEnabled = enableConnectButton;
-            ButtonDisconnectFromDevice.IsEnabled = !ButtonConnectToDevice.IsEnabled;
-
-            ConnectDevices.IsEnabled = ButtonConnectToDevice.IsEnabled;
         }
     }
 }

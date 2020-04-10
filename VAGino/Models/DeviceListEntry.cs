@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 using Windows.Devices.Enumeration;
 
-namespace SerialArduino
+namespace VAGino
 {
     /// <summary>
     /// The class will only expose properties from DeviceInformation that are going to be used

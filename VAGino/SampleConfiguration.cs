@@ -12,19 +12,18 @@
 using System;
 using System.Collections.Generic;
 using Windows.UI.Xaml.Controls;
-using SerialArduino;
+using VAGino;
 
-namespace SDKTemplate
+namespace VAGino
 {
     public partial class MainPage : Page
     {
-        public const string FEATURE_NAME = "SerialArduino";
+        public const string FEATURE_NAME = "VAG";
 
         List<Scenario> scenarios = new List<Scenario>
         {
-            new Scenario() { Title="Connect/Disconnect", ClassType=typeof(Scenario1_ConnectDisconnect)},
-            new Scenario() { Title="CAN Scan", ClassType=typeof(Scenario3_Jetta)},
-            new Scenario() { Title="CAN Command", ClassType=typeof(Scenario2_LEDTemp)}
+            //new Scenario() { Title="Connect/Disconnect", ClassType=typeof(ConnectionPage)},
+            new Scenario() { Title="Sniffer", ClassType=typeof(SnifferPage)},
         };
     }
 

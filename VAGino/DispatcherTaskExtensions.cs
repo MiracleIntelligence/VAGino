@@ -13,7 +13,7 @@ using System;
 using System.Threading.Tasks;
 using Windows.UI.Core;
 
-namespace SDKTemplate
+namespace VAGino
 {
     // This extension method is taken from
     // https://github.com/Microsoft/Windows-task-snippets/blob/master/tasks/UI-thread-task-await-from-background-thread.md

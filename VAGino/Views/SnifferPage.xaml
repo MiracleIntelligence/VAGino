@@ -1,0 +1,261 @@
+<!--
+//*********************************************************
+//
+// Copyright (c) Microsoft. All rights reserved.
+// This code is licensed under the MIT License (MIT).
+// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
+// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
+// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
+// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
+//
+//*********************************************************
+-->
+<Page
+    x:Class="VAGino.SnifferPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:VAGino"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+    mc:Ignorable="d">
+    <Page.Resources>
+        <SymbolIconSource x:Key="DeleteIcon" Symbol="Delete"/>
+
+
+        <SwipeItems x:Key="ExecuteDelete" Mode="Execute">
+            <SwipeItem Text="Delete" IconSource="{StaticResource DeleteIcon}"
+               Background="Red" Invoked="OnDeleteFilter"/>
+        </SwipeItems>
+
+        <CollectionViewSource x:Name="MessageGroups"
+                              x:Key="MessageGroups"
+                              IsSourceGrouped="True"
+                              Source="{x:Bind ViewModel.Messages, Mode=OneWay}"/>
+        <MenuFlyout x:Key="FlyoutGroup" x:Name="FlyoutGroup" >
+            <MenuFlyout.Items>
+                <MenuFlyoutItem Text="Delete" Click="OnDeleteGroup"/>
+                <MenuFlyoutItem Text="Delete and Filter" Click="OnDeleteAndFilterGroup"/>
+            </MenuFlyout.Items>
+        </MenuFlyout>
+        <Style TargetType="Button"
+               x:Key="VAGinoButtonStyle"
+               BasedOn="{StaticResource ButtonRevealStyle}">
+            <Setter Property="Margin" Value="0,8"/>
+        </Style>
+        <Style TargetType="StackPanel"
+               x:Key="VAGinoStackPanel">
+            <Setter Property="Margin" Value="8"/>
+            <Setter Property="Padding" Value="7"/>
+            <Setter Property="BorderBrush" Value="Blue"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style TargetType="RelativePanel"
+               x:Key="VAGinoRelativePanel">
+            <Setter Property="Margin" Value="8"/>
+            <Setter Property="Padding" Value="7"/>
+            <Setter Property="BorderBrush" Value="Blue"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+    </Page.Resources>
+    <Page.TopAppBar>
+        <CommandBar VerticalAlignment="Top" Background="{StaticResource SystemControlAcrylicWindowBrush}">
+            <AppBarButton Icon="Play" Label="Connect" Command="{x:Bind ViewModel.ConnectCommand, Mode=OneWay}"/>
+            <AppBarButton Icon="Stop" Label="Disconnect" Command="{x:Bind ViewModel.DisconnectCommand, Mode=OneWay}"/>
+            <AppBarSeparator/>
+            <AppBarButton Icon="Delete" Label="Delete records" Click="{x:Bind DeleteAllGroups}"/>
+            <AppBarButton Icon="Filter" Label="Filter new" Click="{x:Bind FilterNew}"/>
+            <AppBarButton Icon="Clear" Label="Clear" Click="{x:Bind ClearList}"/>
+
+            <!--<AppBarToggleButton Icon="Shuffle" Label="Shuffle" Click="AppBarButton_Click" />-->
+            <AppBarSeparator/>
+            <AppBarButton Icon="Refresh" Label="Update data" Command="{x:Bind ViewModel.UpdateDataCommand, Mode=OneWay}"/>
+            <!--<AppBarButton Icon="Back" Label="Back" Click="AppBarButton_Click"/>
+            <AppBarButton Icon="Forward" Label="Forward" Click="AppBarButton_Click"/>-->
+
+            <CommandBar.SecondaryCommands>
+                <!--<AppBarButton Label="Like" Click="AppBarButton_Click"/>
+                <AppBarButton Label="Dislike" Click="AppBarButton_Click"/>-->
+            </CommandBar.SecondaryCommands>
+
+            <CommandBar.Content>
+                <TextBlock Text="{x:Bind ViewModel.StatusText, Mode=OneWay}" Margin="12,14"/>
+            </CommandBar.Content>
+        </CommandBar>
+    </Page.TopAppBar>
+    <Grid VerticalAlignment="Stretch">
+
+        <Grid VerticalAlignment="Stretch"
+              Margin="12,10,12,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Grid x:Name="GridMain" 
+                  DataContext="{x:Bind ViewModel}"
+                  VerticalAlignment="Stretch"
+                  Grid.Row="1"                      
+                  Margin="5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="50"/>
+                    <RowDefinition Height="100"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="200"/>
+                </Grid.ColumnDefinitions>
+                <controls:DataGrid x:Name="DataGridGroupd" 
+                                   LoadingRowGroup="OnLoadingRowGroup" 
+                                   RowGroupHeaderPropertyNameAlternative="ID"
+                                   Loaded="OnDataGridLoaded"
+                                   Margin="8"                                   
+                                   CanUserSortColumns="False"
+                                   AutoGenerateColumns="False"
+                                   BorderBrush="Blue"
+                                   BorderThickness="1">
+                    <controls:DataGrid.Columns>
+                        <controls:DataGridTextColumn 
+            Header="COUNT" 
+            Width="100"
+                            
+            Binding="{Binding Count}" 
+            FontSize="16" />
+                        <controls:DataGridTextColumn 
+            Header="DLC" 
+            Width="100"
+            Binding="{Binding DLC}" 
+            FontSize="16" />
+                        <controls:DataGridTextColumn 
+            Header="DATA"
+            Width="300"
+            Binding="{Binding Data}" >
+                            <controls:DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextWrapping" Value="Wrap"/>
+                                </Style>
+                            </controls:DataGridTextColumn.ElementStyle>
+                            <controls:DataGridTextColumn.EditingElementStyle>
+                                <Style TargetType="TextBox">
+                                    <Setter Property="Foreground" Value="Blue"/>
+                                </Style>
+                            </controls:DataGridTextColumn.EditingElementStyle>
+                        </controls:DataGridTextColumn>
+                    </controls:DataGrid.Columns>
+                </controls:DataGrid>
+                <RelativePanel x:Name="RelativePanelFilters"
+                               Grid.Column="1"
+                               Grid.RowSpan="3" 
+                               Style="{ThemeResource VAGinoRelativePanel}">
+                    <TextBlock x:Name="TextBlockFilter" 
+                        Text="Filters"
+                               FontSize="21"
+                               Margin="0,5"
+                               RelativePanel.AlignTopWithPanel="True"
+                               RelativePanel.AlignLeftWithPanel="True"
+                               RelativePanel.AlignRightWithPanel="True"/>
+                    <Button x:Name="BtnAddFilter" 
+                            Command="{x:Bind ViewModel.AddFilterCommand, Mode=OneWay}"
+                            Style="{ThemeResource VAGinoButtonStyle}"
+                            RelativePanel.AlignBottomWithPanel="True"
+                            RelativePanel.AlignHorizontalCenterWithPanel="True"
+                            Content="Add filter"         
+                        CommandParameter="{Binding Text, ElementName=TBFilter}"/>
+                    <TextBox x:Name="TBFilter"
+                             Margin="0,8"
+                             RelativePanel.AlignLeftWith="TextBlockFilter"
+                             RelativePanel.AlignRightWith="TextBlockFilter"
+                             RelativePanel.Above="BtnAddFilter"
+                         KeyDown="OnTBFilterKeyDown"/>
+
+                    <ListView x:Name="ListViewFilters"
+                              Margin="0,8"
+                          ItemsSource="{x:Bind ViewModel.Filters}"
+                              RelativePanel.AlignLeftWith="TextBlockFilter"
+                              RelativePanel.AlignRightWith="TextBlockFilter"
+                              RelativePanel.Above="TBFilter"
+                              RelativePanel.Below="TextBlockFilter">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <SwipeControl x:Name="ListViewSwipeContainer"
+                          RightItems="{StaticResource ExecuteDelete}"
+                          Height="30">
+                                    <TextBlock Text="{x:Bind}"                                            
+                                           FontSize="18"/>
+                                </SwipeControl>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </RelativePanel>
+
+                <StackPanel Orientation="Vertical"
+                            Style="{ThemeResource VAGinoStackPanel}"
+                            Grid.Row="0" 
+                            Grid.Column="2">
+                    <TextBlock x:Name="TBBatteryLevel"
+                               FontSize="24"
+                               FontWeight="Bold">
+                        <Run Text="Battery"/>
+                        <Run x:Name="TBBatteryLevelValue" Text="{x:Bind ViewModel.BatteryLevel, Mode=OneWay}"/>
+                        <Run Text="%"/>
+                    </TextBlock>
+                </StackPanel>
+                <StackPanel Grid.Row="2"
+                            Grid.Column="2"
+                            Style="{ThemeResource VAGinoStackPanel}">
+                    <Button x:Name="BtnLFWD"
+                            Style="{ThemeResource VAGinoButtonStyle}"
+                            HorizontalAlignment="Center"
+                            Content="LFW Down"/>
+                </StackPanel>
+                <RelativePanel  x:Name="RelativePanelConsole"
+                                Grid.Row="1"
+                                Grid.RowSpan="2"
+                                Style="{ThemeResource VAGinoRelativePanel}">
+                    <TextBox x:Name="TBCommand"
+                             RelativePanel.AlignLeftWithPanel="True"
+                             RelativePanel.AlignRightWithPanel="True"
+                             Margin="0,0,105,5"
+                                 />
+                    <Button x:Name="BTNCommand"
+                            RelativePanel.AlignRightWithPanel="True"
+                            Width="100"
+                            Margin="0,0,0,5"
+                            Style="{ThemeResource VAGinoButtonStyle}"
+                            Content="Send"
+                            Command="{x:Bind ViewModel.SendRawCommand}"
+                            CommandParameter="{Binding Text, ElementName=TBCommand}"
+                            />
+
+                    <ScrollViewer x:Name="SVConsole"
+                                  MinHeight="100"
+                                  RelativePanel.Below="TBCommand"
+                                  Background="Black"
+                                  RelativePanel.AlignLeftWithPanel="True"
+                                  RelativePanel.AlignRightWithPanel="True"
+                                  RelativePanel.AlignBottomWithPanel="True"
+                                  VerticalAlignment="Stretch"
+                                  HorizontalAlignment="Stretch"
+                                  >
+                        <RichTextBlock x:Name="RTBConsole"                    
+                              Margin="5,5"
+                                       HorizontalAlignment="Stretch"                                       
+                                       VerticalAlignment="Stretch"
+                                       Width="500"/>
+                    </ScrollViewer>
+
+                </RelativePanel>
+            </Grid>
+
+            <!-- Status Block for providing messages to the user.  Use the
+             NotifyUser() method to populate the message -->
+            <TextBlock x:Name="StatusBlock" 
+                       Grid.Row="4" 
+                       Margin="5" 
+                       Visibility="Collapsed"/>
+        </Grid>
+    </Grid>
+</Page>

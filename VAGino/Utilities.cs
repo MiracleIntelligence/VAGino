@@ -9,15 +9,7 @@
 //
 //*********************************************************
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using SDKTemplate;
-
-namespace SerialArduino
+namespace VAGino
 {
     /// <summary>
     /// This class is intended to host any functionality that will be shared among different

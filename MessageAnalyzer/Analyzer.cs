@@ -28,7 +28,7 @@ namespace MessageAnalyzer
                 switch (cmdType)
                 {
                     case SerialMsgType.CAN: serialMessage = GetCanMessage(elements[1]); break;
-                    case SerialMsgType.LOG: serialMessage = GetLogMessage(elements[1]); break;
+                    case SerialMsgType.DBG: serialMessage = GetLogMessage(elements[1]); break;
                 }
 
                 return serialMessage;

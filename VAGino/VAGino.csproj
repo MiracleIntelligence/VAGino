@@ -105,29 +105,21 @@
     <Compile Include="Collections\Grouping.cs" />
     <Compile Include="DeviceHelpers.cs" />
     <Compile Include="DispatcherTaskExtensions.cs" />
-    <Compile Include="FrameRenderer.cs" />
-    <Compile Include="MainPage.xaml.cs">
+    <Compile Include="Services\SerialConnectionBroker.cs" />
+    <Compile Include="Services\ConnectionService.cs" />
+    <Compile Include="Views\MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Constants.cs" />
-    <Compile Include="DeviceListEntry.cs" />
+    <Compile Include="Models\DeviceListEntry.cs" />
     <Compile Include="EventHandlerForDevice.cs" />
     <Compile Include="Models\MessageRow.cs" />
     <Compile Include="SampleConfiguration.cs" />
-    <Compile Include="Scenario1_ConnectDisconnect.xaml.cs">
-      <DependentUpon>Scenario1_ConnectDisconnect.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Scenario4_Jetta.xaml.cs">
-      <DependentUpon>Scenario4_Jetta.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Scenario3_Jetta.xaml.cs">
-      <DependentUpon>Scenario3_Jetta.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Scenario2_LEDTemp.xaml.cs">
-      <DependentUpon>Scenario2_LEDTemp.xaml</DependentUpon>
+    <Compile Include="Views\SnifferPage.xaml.cs">
+      <DependentUpon>SnifferPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Utilities.cs" />
-    <Compile Include="ViewModels\JettaViewModel.cs" />
+    <Compile Include="ViewModels\SnifferViewModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
@@ -139,15 +131,11 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </ApplicationDefinition>
-    <Page Include="MainPage.xaml">
+    <Page Include="Views\MainPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Scenario4_Jetta.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Scenario3_Jetta.xaml">
+    <Page Include="Views\SnifferPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -156,14 +144,6 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Styles\Styles.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Scenario1_ConnectDisconnect.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Scenario2_LEDTemp.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -232,6 +212,9 @@
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
       <Version>6.2.9</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.Toolkit.Uwp.UI.Controls">
+      <Version>6.0.0</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.Toolkit.Uwp.UI.Controls.DataGrid">
       <Version>6.0.0</Version>
     </PackageReference>
@@ -253,6 +236,7 @@
       <Name>MessageAnalyzer</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

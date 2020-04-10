@@ -10,23 +10,16 @@
 //*********************************************************
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
+using Windows.ApplicationModel;
 using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
-
-using Windows.ApplicationModel;
 using Windows.Foundation;
-
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 
-using SDKTemplate;
-
-namespace SerialArduino
+namespace VAGino
 {
     /// <summary>
     /// The purpose of this class is to demonstrate the expected application behavior for app events 

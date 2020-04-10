@@ -15,10 +15,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using SerialArduino;
+using VAGino;
 using Windows.UI.Xaml.Controls;
 
-namespace SerialArduino
+namespace VAGino
 {
     public class DeviceProperties
     {
@@ -39,7 +39,10 @@ namespace SerialArduino
 
     public class Commands
     {
-        public const string BATTERY = "temp";
+        public const string CMD_CHECK_HYBRID_BATTERY = "B";
+        public const string CMD_SET_DEBUG = "D";
+        public const string CMD_START_CAN = "CS";
+        public const string CMD_STOP_CAN = "CF";
         public const string LFW_DOWN = "lfwd";
     }
 
@@ -64,7 +67,7 @@ namespace SerialArduino
             "420",
             "440",
             "448",
-            "482",            
+            "482",
             "4A8",
             "4A0",
             "548",

@@ -14,7 +14,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
 
-namespace SDKTemplate
+namespace VAGino
 {
     public partial class DeviceHelpers
     {

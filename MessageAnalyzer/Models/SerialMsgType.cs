@@ -2,7 +2,7 @@
 {
     public enum SerialMsgType
     {
-        LOG = 0,
+        DBG = 0,
         CMD = 1,
         CAN = 3
     }

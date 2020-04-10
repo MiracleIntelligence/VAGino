@@ -9,22 +9,17 @@
 //
 //*********************************************************
 
-using MessageAnalyzer;
-using MessageAnalyzer.Models;
-
 using Microsoft.Toolkit.Uwp.UI.Controls;
+
 using ReadlnLibrary.Core.Collections;
-using SDKTemplate;
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading;
 using System.Threading.Tasks;
+
 using VAGino.Models;
 using VAGino.ViewModels;
 
-using Windows.Storage.Streams;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -35,28 +30,29 @@ using Windows.UI.Xaml.Navigation;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234238
 
-namespace SerialArduino
+namespace VAGino
 {
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class Scenario3_Jetta : Page, IDisposable
+    public sealed partial class SnifferPage : Page
     {
 
         // A pointer back to the main page.  This is needed if you want to call methods in MainPage such
         // as NotifyUser()
         private MainPage rootPage = MainPage.Current;
-        private JettaViewModel ViewModel { get; }
+        private SnifferViewModel ViewModel { get; }
+        private bool _collapseNewGroup = true;
 
 
         // Indicate if we navigate away from this page or not.
         private Boolean IsNavigatedAway;
         private Paragraph _paragraph;
 
-        public Scenario3_Jetta()
+        public SnifferPage()
         {
             this.InitializeComponent();
-            ViewModel = new JettaViewModel();
+            ViewModel = new SnifferViewModel();
             KeyEventHandler keyeventHandler = new KeyEventHandler(OnTBCommandEnter);
 
             TBCommand.AddHandler(TextBox.KeyDownEvent, keyeventHandler, true);
@@ -68,11 +64,6 @@ namespace SerialArduino
             {
                 SendCommand();
             }
-        }
-
-        public void Dispose()
-        {
-            ViewModel.Dispose();
         }
 
         /// <summary>
@@ -96,19 +87,11 @@ namespace SerialArduino
                                             NotifyType.StatusMessage);
 
 
-
-                EventHandlerForDevice.Current.Device.BaudRate = 1000000;
-                //EventHandlerForDevice.Current.Device.StopBits = SerialStopBitCount.One;
-                //EventHandlerForDevice.Current.Device.DataBits = 8;
-                //EventHandlerForDevice.Current.Device.Parity = SerialParity.None;
-                //EventHandlerForDevice.Current.Device.Handshake = SerialHandshake.None;
-                //EventHandlerForDevice.Current.Device.WriteTimeout = TimeSpan.FromMilliseconds(500);
-                //EventHandlerForDevice.Current.Device.ReadTimeout = TimeSpan.FromMilliseconds(500);
-
             }
 
             ViewModel.OnNavigatedTo();
         }
+
 
         /// <summary>
         /// Cancel any on going tasks when navigating away from the page so the device is in a consistent state throughout
@@ -128,19 +111,12 @@ namespace SerialArduino
         /// <param name="cancellationToken"></param>
         /// 
 
-        Queue<Byte> _buffer = new Queue<byte>();
-
-        private void BTNCommand_Click(object sender, RoutedEventArgs e)
-        {
-            SendCommand();
-        }
+        private Grouping<string, MessageRow> _targetGroup;
 
         private async void SendCommand()
         {
             var cmd = TBCommand.Text;
             await SendCommand(cmd);
-            //OnStartTracking(null, null);
-            //await ReadAnswerAsync(ReadCancellationTokenSource.Token);
         }
 
         private async Task SendCommand(string cmd)
@@ -178,18 +154,6 @@ namespace SerialArduino
             }));
         }
 
-
-
-        private async void UpdateData_Click(object sender, RoutedEventArgs e)
-        {
-            await SendCommand(Commands.BATTERY);
-        }
-
-        private async void LFWDown_Click(object sender, RoutedEventArgs e)
-        {
-            await SendCommand(Commands.LFW_DOWN);
-        }
-
         private void OnDataGridLoaded(object sender, RoutedEventArgs e)
         {
             CreateCollectionView(sender as DataGrid);
@@ -216,7 +180,7 @@ namespace SerialArduino
             ICollectionViewGroup group = e.RowGroupHeader.CollectionViewGroup;
 
             e.RowGroupHeader.RightTapped += RowGroupHeader_RightTapped;
-            
+
 
             // To update items count in group header
 
@@ -227,30 +191,18 @@ namespace SerialArduino
             myBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
             BindingOperations.SetBinding(e.RowGroupHeader, DataGridRowGroupHeader.PropertyValueProperty, myBinding);
 
+
         }
+
 
         private void RowGroupHeader_RightTapped(object sender, RightTappedRoutedEventArgs e)
         {
+
             ICollectionViewGroup groupView = (sender as DataGridRowGroupHeader).CollectionViewGroup;
             var group = groupView.Group as Grouping<string, MessageRow>;
 
-            DataGridGroupd.ItemsSource = null;
-
-            ViewModel.RemoveGroup(group);
-
-            CreateCollectionView(DataGridGroupd);
-        }
-
-        private void OnClearClick(object sender, RoutedEventArgs e)
-        {
-            ClearList();
-        }
-
-        private void OnFilterClick(object sender, RoutedEventArgs e)
-        {
-            ViewModel.FilterGroups();
-
-            ClearList();
+            _targetGroup = group;
+            FlyoutGroup.ShowAt(sender as FrameworkElement);
         }
 
         private void ClearList()
@@ -261,6 +213,59 @@ namespace SerialArduino
             {
                 ViewModel.ClearCommand.Execute(null);
             }
+            CreateCollectionView(DataGridGroupd);
+        }
+
+        private void FilterNew()
+        {
+            DataGridGroupd.ItemsSource = null;
+
+            ViewModel.FilterItems();
+
+            CreateCollectionView(DataGridGroupd);
+        }
+
+        private void DeleteAllGroups()
+        {
+            ViewModel.DeleteRecords();
+            CreateCollectionView(DataGridGroupd);
+        }
+
+        private void OnDeleteGroup(object sender, RoutedEventArgs e)
+        {
+            DataGridGroupd.ItemsSource = null;
+
+            ViewModel.RemoveGroup(_targetGroup);
+
+            CreateCollectionView(DataGridGroupd);
+        }
+
+        private void OnDeleteFilter(SwipeItem sender, SwipeItemInvokedEventArgs args)
+        {
+            if (ViewModel.DeleteFilterCommand != null)
+            {
+                ViewModel.DeleteFilterCommand.Execute(args.SwipeControl.DataContext);
+            }
+        }
+
+        private void OnTBFilterKeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+            {
+                if (ViewModel.AddFilterCommand != null && !String.IsNullOrEmpty(TBFilter.Text))
+                {
+                    ViewModel.AddFilterCommand.Execute(TBFilter.Text);
+                    TBFilter.Text = null;
+                }
+            }
+        }
+
+        private void OnDeleteAndFilterGroup(object sender, RoutedEventArgs e)
+        {
+            DataGridGroupd.ItemsSource = null;
+
+            ViewModel.RemoveGroupAndFilter(_targetGroup);
+
             CreateCollectionView(DataGridGroupd);
         }
     }
