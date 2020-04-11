@@ -304,8 +304,15 @@ namespace VAGino.ViewModels
 
         private async void RequestData()
         {
-            await SendCommand(Commands.CMD_CHECK_HYBRID_BATTERY);
+            try
+            {
+                await SendCommand(Commands.CMD_CHECK_HYBRID_BATTERY);
 
+            }
+            catch
+            {
+
+            }
         }
         public async void ProcessMessage(SerialMessage s)
         {

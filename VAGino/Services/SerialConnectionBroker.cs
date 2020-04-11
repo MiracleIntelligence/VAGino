@@ -109,6 +109,9 @@ namespace VAGino.Services
 
         private void ProcessMessage(byte[] serialData)
         {
+            const int ID_INDEX = 1;
+            const int DLC_INDEX = ID_INDEX + 4;
+            const int DATA_INDEX = DLC_INDEX + 1;
             if (serialData.Length == 0)
             {
                 return;
@@ -118,9 +121,9 @@ namespace VAGino.Services
             // CAN data;
             if (cmd == 1)
             {
-                var id = BitConverter.ToInt16(serialData, 1);
-                var dlc = serialData[3];
-                if (serialData.Length != dlc + 4)
+                var id = BitConverter.ToInt32(serialData, ID_INDEX);
+                var dlc = serialData[DLC_INDEX];
+                if (serialData.Length != DLC_INDEX + dlc + 1)
                 {
                     return;
                 }
@@ -130,13 +133,12 @@ namespace VAGino.Services
                     stringBuilder.Append(id.ToString("x").ToUpper());
                     stringBuilder.Append(" ");
                     stringBuilder.Append(dlc.ToString("x").ToUpper());
-                    for (int i = 4; i < serialData.Length; ++i)
+                    for (int i = DATA_INDEX; i < serialData.Length; ++i)
                     {
                         stringBuilder.Append(" ");
                         stringBuilder.Append(serialData[i].ToString("x").ToUpper());
                     }
                     ProcessMessage(stringBuilder.ToString());
-                    //Debug.WriteLine("");
                 }
             }
             else

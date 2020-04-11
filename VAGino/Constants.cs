@@ -41,8 +41,8 @@ namespace VAGino
     {
         public const string CMD_CHECK_HYBRID_BATTERY = "B";
         public const string CMD_SET_DEBUG = "D";
-        public const string CMD_START_CAN = "CS";
-        public const string CMD_STOP_CAN = "CF";
+        public const string CMD_START_CAN = "S";
+        public const string CMD_STOP_CAN = "F";
         public const string LFW_DOWN = "lfwd";
     }
 
