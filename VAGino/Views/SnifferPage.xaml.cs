@@ -9,13 +9,14 @@
 //
 //*********************************************************
 
-using Microsoft.Toolkit.Uwp.UI.Controls;
-
 using ReadlnLibrary.Core.Collections;
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Threading.Tasks;
+
+using Telerik.Data.Core;
+using Telerik.UI.Xaml.Controls.Grid;
 
 using VAGino.Models;
 using VAGino.ViewModels;
@@ -23,7 +24,6 @@ using VAGino.ViewModels;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Documents;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Navigation;
@@ -52,6 +52,11 @@ namespace VAGino
         public SnifferPage()
         {
             this.InitializeComponent();
+
+            var warningSuppression = this.Dispatcher.RunAsync(CoreDispatcherPriority.Low, () => this.InitializeSelectedColumnListSelection());
+            this.dataGrid.Columns.CollectionChanged += this.Columns_CollectionChanged;
+
+
             ViewModel = new SnifferViewModel();
             KeyEventHandler keyeventHandler = new KeyEventHandler(OnTBCommandEnter);
 
@@ -159,88 +164,37 @@ namespace VAGino
 
         private void OnDataGridLoaded(object sender, RoutedEventArgs e)
         {
-            CreateCollectionView(sender as DataGrid);
+            CreateCollectionView(sender as RadDataGrid);
         }
 
-        private void CreateCollectionView(DataGrid grid)
+        private void CreateCollectionView(RadDataGrid grid)
         {
-            //grid.DataContext = MessageGroups;
             MessageGroups.Source = null;
             MessageGroups.Source = ViewModel.Messages;
             grid.ItemsSource = MessageGroups.View;
-
-            //Binding myBinding = new Binding();
-            //myBinding.Source = MessageGroups;
-            //myBinding.Path = new PropertyPath("View");
-            //myBinding.Mode = BindingMode.OneWay;
-            //myBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
-            //BindingOperations.SetBinding(grid, DataGrid.ItemsSourceProperty, myBinding);
-
-        }
-
-        private void OnLoadingRowGroup(object sender, DataGridRowGroupHeaderEventArgs e)
-        {
-            ICollectionViewGroup group = e.RowGroupHeader.CollectionViewGroup;
-
-            e.RowGroupHeader.RightTapped += RowGroupHeader_RightTapped;
-
-
-            // To update items count in group header
-
-            Binding myBinding = new Binding();
-            myBinding.Source = group.Group;
-            myBinding.Path = new PropertyPath("KeyData");
-            myBinding.Mode = BindingMode.OneWay;
-            myBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
-            BindingOperations.SetBinding(e.RowGroupHeader, DataGridRowGroupHeader.PropertyValueProperty, myBinding);
-
-
-        }
-
-
-        private void RowGroupHeader_RightTapped(object sender, RightTappedRoutedEventArgs e)
-        {
-
-            ICollectionViewGroup groupView = (sender as DataGridRowGroupHeader).CollectionViewGroup;
-            var group = groupView.Group as Grouping<string, MessageRow>;
-
-            _targetGroup = group;
-            FlyoutGroup.ShowAt(sender as FrameworkElement);
         }
 
         private void ClearList()
         {
-            DataGridGroupd.ItemsSource = null;
-
             if (ViewModel.ClearCommand.CanExecute(null))
             {
                 ViewModel.ClearCommand.Execute(null);
             }
-            CreateCollectionView(DataGridGroupd);
         }
 
         private void FilterNew()
         {
-            DataGridGroupd.ItemsSource = null;
+            dataGrid.ItemsSource = null;
 
             ViewModel.FilterItems();
 
-            CreateCollectionView(DataGridGroupd);
+            CreateCollectionView(dataGrid);
         }
 
         private void DeleteAllGroups()
         {
             ViewModel.DeleteRecords();
-            CreateCollectionView(DataGridGroupd);
-        }
-
-        private void OnDeleteGroup(object sender, RoutedEventArgs e)
-        {
-            DataGridGroupd.ItemsSource = null;
-
-            ViewModel.RemoveGroup(_targetGroup);
-
-            CreateCollectionView(DataGridGroupd);
+            CreateCollectionView(dataGrid);
         }
 
         private void OnDeleteFilter(SwipeItem sender, SwipeItemInvokedEventArgs args)
@@ -261,16 +215,7 @@ namespace VAGino
                     TBFilter.Text = null;
                 }
             }
-        }
-
-        private void OnDeleteAndFilterGroup(object sender, RoutedEventArgs e)
-        {
-            DataGridGroupd.ItemsSource = null;
-
-            ViewModel.RemoveGroupAndFilter(_targetGroup);
-
-            CreateCollectionView(DataGridGroupd);
-        }
+        }  
 
         private void ListViewSwipeContainer_RightTapped(object sender, RightTappedRoutedEventArgs args)
         {
@@ -279,5 +224,87 @@ namespace VAGino
                 ViewModel.DeleteFilterCommand.Execute((sender as FrameworkElement).DataContext);
             }
         }
+
+        #region Telerik
+        private void Columns_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            var warningSuppression = this.Dispatcher.RunAsync(CoreDispatcherPriority.Low, () => this.InitializeSelectedColumnListSelection());
+        }
+
+        private void InitializeSelectedColumnListSelection()
+        {
+            if (selectedColumnList.Items.Count > 0)
+            {
+                selectedColumnList.SelectedIndex = 0;
+            }
+        }
+
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            this.dataGrid.FilterDescriptors.Clear();
+            string text = ((TextBox)sender).Text;
+
+            if (!string.IsNullOrEmpty(text))
+            {
+                this.dataGrid.FilterDescriptors.Add(new DelegateFilterDescriptor() { Filter = new EmployeeSearchFilter(text, selectedColumnList.SelectedItem as DataGridTypedColumn) });
+            }
+        }
+
+
+        private class EmployeeSearchFilter : IFilter
+        {
+            private string matchString;
+
+            private DataGridTypedColumn column;
+
+            public EmployeeSearchFilter(string match, DataGridTypedColumn column)
+            {
+                this.matchString = match;
+                this.column = column;
+            }
+
+            public bool PassesFilter(object item)
+            {
+                var model = item as MessageRow;
+
+                if (column == null)
+                {
+                    return false;
+                }
+
+                switch (column.PropertyName)
+                {
+                    case "Id":
+                        return model.Id.Contains(this.matchString, StringComparison.OrdinalIgnoreCase);
+                    case "Dlc":
+                        return model.DLC == Int32.Parse(this.matchString);
+                    case "Message":
+                        return model.Message.Contains(this.matchString, StringComparison.OrdinalIgnoreCase);                    
+                    default:
+                        break;
+                }
+
+                return false;
+            }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            FilterText.Text = string.Empty;
+        }
+
+        private void selectedColumnList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            this.dataGrid.FilterDescriptors.Clear();
+            string text = FilterText.Text;
+
+            if (!string.IsNullOrEmpty(text))
+            {
+                this.dataGrid.FilterDescriptors.Add(new DelegateFilterDescriptor() { Filter = new EmployeeSearchFilter(text, selectedColumnList.SelectedItem as DataGridTypedColumn) });
+            }
+        }
+
+
+        #endregion
     }
 }

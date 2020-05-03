@@ -40,7 +40,7 @@ namespace VAGino.ViewModels
         public ICommand AddFilterCommand { get; }
         public ICommand ConnectCommand { get; }
         public ICommand DisconnectCommand { get; }
-        public GroupedObservableCollection<string, MessageRow> Messages { get; private set; }
+        public ObservableCollection<MessageRow> Messages { get; private set; }
         public Filters Filters { get; private set; }
         public string StatusText { get; set; }
 
@@ -85,8 +85,7 @@ namespace VAGino.ViewModels
             DisconnectCommand = new RelayCommand(Disconnect, () => (EventHandlerForDevice.Current.Device != null));
             SendRawCommand = new RelayCommand<string>(SendRawAsync, (rawCommand) => (!String.IsNullOrEmpty(rawCommand)));
 
-
-            Messages = new GroupedObservableCollection<string, MessageRow>((m) => m.Id);
+            Messages = new ObservableCollection<MessageRow>();
             LogLines = new ObservableCollection<string>();
             SetStatus(STATUS_NOT_CONNECTED);
         }
@@ -245,28 +244,26 @@ namespace VAGino.ViewModels
 
         internal async Task AddCanMessage(CANMessage message)
         {
-            var group = Messages.FirstOrDefault(g => g.Key == message.Id);
-            if (group != null)
+            var item = Messages.FirstOrDefault(g => g.Id.Equals(message.Id, StringComparison.OrdinalIgnoreCase)
+                        && g.Message.Equals(message.Message, StringComparison.OrdinalIgnoreCase));
+            if (item != null)
             {
-                var item = group.FirstOrDefault(m => m.Message == message.Message);
-                if (item != null)
-                {
-                    item.Count++;
-                    return;
-                }
+                item.Count++;
             }
-            var row = new MessageRow(message);
-
-
-            await CoreApplication.GetCurrentView().Dispatcher.RunAsync(CoreDispatcherPriority.Normal, new DispatchedHandler(async () =>
+            else
             {
-                Messages.Add(row);
-            }));
+                var row = new MessageRow(message);
+
+                await CoreApplication.GetCurrentView().Dispatcher.RunAsync(CoreDispatcherPriority.Normal, new DispatchedHandler(() =>
+                {
+                    Messages.Add(row);
+                }));
+            }
         }
 
         internal void DeleteRecords()
         {
-            Messages.ClearItems();
+            Messages.Clear();
             RaisePropertyChanged(nameof(Messages));
         }
 
@@ -275,29 +272,15 @@ namespace VAGino.ViewModels
         {
             _messages.Clear();
             _newMessages.Clear();
-            Messages.ClearItems();
+            Messages.Clear();
             RaisePropertyChanged(nameof(Messages));
         }
 
         internal void FilterItems()
         {
             _newMessages.Clear();
-            Messages.ClearItems();
+            Messages.Clear();
             RaisePropertyChanged(nameof(Messages));
-        }
-
-        internal void RemoveGroup(Grouping<string, MessageRow> group)
-        {
-            foreach (var item in group.ToList())
-            {
-                Messages.Remove(item);
-            }
-        }
-
-        internal void RemoveGroupAndFilter(Grouping<string, MessageRow> group)
-        {
-            Filters.Add(group.Key);
-            RemoveGroup(group);
         }
 
         /// <summary>
