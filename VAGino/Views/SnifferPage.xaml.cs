@@ -129,30 +129,33 @@ namespace VAGino
             TBCommand.Text = String.Empty;
 
             //OnStopTracking(null, null);
-            await WriteConsole(cmd);
-            await ViewModel.SendCommand(cmd);
-        }
-
-        private async Task WriteConsole(string str)
-        {
-            await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, new DispatchedHandler(() =>
+            //await WriteConsole(cmd);
+            if (ViewModel.SendRawCommand?.CanExecute(cmd) == true)
             {
-                var run = new Run();
-                run.Text = str;
-
-                if (_paragraph == null)
-                {
-                    _paragraph = new Paragraph();
-                    RTBConsole.Blocks.Add(_paragraph);
-                }
-
-                _paragraph.Inlines.Add(run);
-                _paragraph.Inlines.Add(new LineBreak());
-
-
-                SVConsole.ChangeView(null, SVConsole.ActualHeight, null);
-            }));
+                ViewModel.SendRawCommand.Execute(cmd);
+            }
         }
+
+        //private async Task WriteConsole(string str)
+        //{
+        //    await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, new DispatchedHandler(() =>
+        //    {
+        //        var run = new Run();
+        //        run.Text = str;
+
+        //        if (_paragraph == null)
+        //        {
+        //            _paragraph = new Paragraph();
+        //            RTBConsole.Blocks.Add(_paragraph);
+        //        }
+
+        //        _paragraph.Inlines.Add(run);
+        //        _paragraph.Inlines.Add(new LineBreak());
+
+
+        //        SVConsole.ChangeView(null, SVConsole.ActualHeight, null);
+        //    }));
+        //}
 
         private void OnDataGridLoaded(object sender, RoutedEventArgs e)
         {
@@ -267,6 +270,14 @@ namespace VAGino
             ViewModel.RemoveGroupAndFilter(_targetGroup);
 
             CreateCollectionView(DataGridGroupd);
+        }
+
+        private void ListViewSwipeContainer_RightTapped(object sender, RightTappedRoutedEventArgs args)
+        {
+            if (ViewModel.DeleteFilterCommand != null)
+            {
+                ViewModel.DeleteFilterCommand.Execute((sender as FrameworkElement).DataContext);
+            }
         }
     }
 }

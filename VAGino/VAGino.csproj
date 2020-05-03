@@ -105,8 +105,13 @@
     <Compile Include="Collections\Grouping.cs" />
     <Compile Include="DeviceHelpers.cs" />
     <Compile Include="DispatcherTaskExtensions.cs" />
+    <Compile Include="Models\FilteredBlock.cs" />
+    <Compile Include="Models\VAGBlock.cs" />
+    <Compile Include="Services\DBService.cs" />
+    <Compile Include="Services\Filters.cs" />
     <Compile Include="Services\SerialConnectionBroker.cs" />
     <Compile Include="Services\ConnectionService.cs" />
+    <Compile Include="VAGinoApp.xaml.cs" />
     <Compile Include="Views\MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
@@ -220,6 +225,9 @@
     </PackageReference>
     <PackageReference Include="MvvmLightLibs">
       <Version>5.4.1.1</Version>
+    </PackageReference>
+    <PackageReference Include="sqlite-net-pcl">
+      <Version>1.6.292</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

@@ -1,15 +1,18 @@
-#include <SPI.h>
+#include <can.h>
 #include <mcp2515.h>
+
+#include <SPI.h>
 #include <SoftwareSerial.h>
 #include <SerialCommand.h> 
 
 
-#define DBGMSG(A)    if (dbg){ Serial.write(0x2); Serial.print("DBG:"); Serial.println(A);}
+#define DBGMSG(A)    if (dbg){ Serial.write(0x2); Serial.print(A); Serial.write('\r');}
 
 struct can_frame canMsg1;
 struct can_frame canMsg2;
 struct can_frame canMsg;
-struct can_frame canMsgLFWD;
+struct can_frame canMsgLFW;
+struct can_frame canMsgLFS;
 
 MCP2515 mcp2515(10);
 SerialCommand serialCommand;
@@ -53,20 +56,28 @@ void setup() {
 	canMsg2.data[7] = 0x55;
 
 	//left fron window
-	canMsgLFWD.can_id = 0x181;
-	canMsgLFWD.can_dlc = 2;
-	canMsgLFWD.data[0] = 0x02;
-	canMsgLFWD.data[1] = 0x00;
+	canMsgLFW.can_id  = 0x181;
+	canMsgLFW.can_dlc = 2;
+	canMsgLFW.data[0] = 0x01;
+	canMsgLFW.data[1] = 0x00;
+
+ //left fron window
+  canMsgLFS.can_id  = 0x181;
+  canMsgLFS.can_dlc = 2;
+  canMsgLFS.data[0] = 0x00;
+  canMsgLFS.data[1] = 0x00; 
+
 
 	serialCommand.addCommand("ledon", SetLedOn);
 	serialCommand.addCommand("ledoff", SetLedOff);
 	serialCommand.addCommand("B", CheckHybridBattery);
-	serialCommand.addCommand("lfwd", LFWDown);
 	serialCommand.addCommand("D", SetDebug);
 	serialCommand.addCommand("S", StartReadCan);
 	serialCommand.addCommand("WRITE", WriteCan);
 	serialCommand.addCommand("F", StopReadCan);
 	serialCommand.addCommand("H", HelpCommand);
+  serialCommand.addCommand("LFWU", LeftForwardWindowUp); 
+  serialCommand.addCommand("LFWD", LeftForwardWindowDown); 
 	serialCommand.addDefaultHandler(UnrecognizedCommand);
 
 	while (!Serial);
@@ -75,7 +86,7 @@ void setup() {
 	SPI.begin();
 
 	mcp2515.reset();
-	mcp2515.setBitrate(CAN_1000KBPS, MCP_16MHZ);
+	mcp2515.setBitrate(CAN_100KBPS, MCP_8MHZ);
 	mcp2515.setNormalMode();
 
 	//Serial.println("------- CAN Read ----------");
@@ -122,9 +133,12 @@ void loop()
 	if (readCan)
 	{
 		ReadCan();
+    //ReadCanS();
 		//ReadCanTest();
 	}
-	//delay(2);
+  //LeftForwardWindow();
+	delay(20);
+ 
 }
 
 
@@ -171,7 +185,22 @@ void SetLedOff() {
 // Celcius.  -9.99 is returned on an error condition.
 //
 void CheckHybridBattery() {
-	mcp2515.sendMessage(&canMsg2);
+  
+  DBGMSG(F("Check hybrid battery level")); 
+	mcp2515.sendMessage(&canMsg2);  
+}
+
+void LeftForwardWindowUp() {
+  DBGMSG(F("Left forward window up"));  
+  canMsgLFW.data[0] = 0x02;
+  mcp2515.sendMessage(&canMsgLFW);
+}
+
+
+void LeftForwardWindowDown() {
+  DBGMSG(F("Left forward window down"));  
+  canMsgLFW.data[0] = 0x08;
+  mcp2515.sendMessage(&canMsgLFW);
 }
 
 //float temperature = -9.99;
@@ -198,11 +227,6 @@ void CheckHybridBattery() {
 
 //Serial.println(13, 2);
 //}
-
-
-void LFWDown() {
-	mcp2515.sendMessage(&canMsgLFWD);
-}
 
 
 void StartReadCan()
@@ -250,6 +274,39 @@ void ReadCan() {
 	//Serial.println("CAN:65 2 2 4");
 	//DBGMSG(F("ReadCan end"));
 	//DBGMSG(F("R"));
+}
+
+void ReadCanS() {
+  //DBGMSG(F("ReadCan begin"));
+  mcp2515.readMessage(&canMsg);
+  //if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
+  {
+    //CAN data
+    //Serial.write(0x1);
+
+    Serial.print(canMsg.can_id, HEX); // print ID
+    //int value = 0x7ED;
+    //byte* p;
+    //p = (byte*)&(canMsg.can_id);
+    //Serial.write(p, 4);
+
+
+    Serial.print(" ");
+    Serial.print(canMsg.can_dlc, HEX); // print DLC
+    //Serial.write(canMsg.can_dlc);
+    Serial.print(" ");
+    //Serial.write(canMsg.data, canMsg.can_dlc);
+    for (int i = 0; i < canMsg.can_dlc; i++)
+    {
+      Serial.print(canMsg.data[i], HEX);
+      Serial.print(" ");
+    }
+    Serial.println();
+    //Serial.write('\r');
+  }
+  //Serial.println("CAN:65 2 2 4");
+  //DBGMSG(F("ReadCan end"));
+  //DBGMSG(F("R"));
 }
 
 void ReadCanTest()
@@ -342,7 +399,7 @@ void SetDebug() {
 //
 void UnrecognizedCommand() {
 
-  delay(2000);
+  //delay(2000);
 	char* arg = serialCommand.next();
 	if (strlen(arg) > 0)
 	{

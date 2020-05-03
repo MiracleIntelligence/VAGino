@@ -4,6 +4,8 @@ using GalaSoft.MvvmLight.Command;
 using MessageAnalyzer;
 using MessageAnalyzer.Models;
 
+using Microsoft.Toolkit.Helpers;
+
 using ReadlnLibrary.Core.Collections;
 
 using System;
@@ -11,6 +13,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -38,7 +41,7 @@ namespace VAGino.ViewModels
         public ICommand ConnectCommand { get; }
         public ICommand DisconnectCommand { get; }
         public GroupedObservableCollection<string, MessageRow> Messages { get; private set; }
-        public ObservableCollection<string> Filters { get; private set; }
+        public Filters Filters { get; private set; }
         public string StatusText { get; set; }
 
         private SerialConnectionBroker _serialBroker;
@@ -50,12 +53,18 @@ namespace VAGino.ViewModels
 
         private Dictionary<string, int> _messages;
         private Dictionary<string, int> _newMessages;
+        private DBService _dbService;
+
+        public ObservableCollection<string> LogLines { get; }
 
         public SnifferViewModel()
         {
             _messages = new Dictionary<string, int>();
             _newMessages = new Dictionary<string, int>();
-            Filters = new ObservableCollection<string>(VAGino.Filters.IDFilters);
+            _dbService = Singleton<DBService>.Instance;
+            Filters = Singleton<Filters>.Instance;
+
+            LoadData();
 
             _serialBroker = new SerialConnectionBroker();
             _serialBroker.TextRead += OnSerialTextRead;
@@ -74,16 +83,38 @@ namespace VAGino.ViewModels
             AddFilterCommand = new RelayCommand<string>(AddFilter);
             ConnectCommand = new RelayCommand(Connect, () => (EventHandlerForDevice.Current.Device == null && _connectionService.Devices.Count > 0));
             DisconnectCommand = new RelayCommand(Disconnect, () => (EventHandlerForDevice.Current.Device != null));
-            SendRawCommand = new RelayCommand<string>(SendRawAsync, (rawCommand) => (EventHandlerForDevice.Current.Device != null));
+            SendRawCommand = new RelayCommand<string>(SendRawAsync, (rawCommand) => (!String.IsNullOrEmpty(rawCommand)));
 
 
             Messages = new GroupedObservableCollection<string, MessageRow>((m) => m.Id);
+            LogLines = new ObservableCollection<string>();
             SetStatus(STATUS_NOT_CONNECTED);
+        }
+
+        private void LoadData()
+        {
+            var allBlocks = _dbService.Connection.Table<VAGBlock>().ToList();
+            var allFilters = _dbService.Connection.Table<FilteredBlock>().ToList();
+
+            Filters.Init();
         }
 
         private async void SendRawAsync(string rawCommand)
         {
-            await SendCommand(rawCommand);
+            int count = 1;
+            if (!String.IsNullOrEmpty(rawCommand))
+            {
+                var elements = rawCommand.Split(':');
+                if (elements.Length > 1)
+                {
+                    count = Int32.Parse(elements[1]);
+                }
+                for (int i = 0; i < count; ++i)
+                {
+                    await SendCommand(elements[0]);
+                    await Task.Delay(5);
+                }
+            }
         }
 
         private async void OnDevicesChanged(object sender, DeviceListEntry e)
@@ -358,6 +389,10 @@ namespace VAGino.ViewModels
                         await AddCanMessage(canM);
                     }
                 }
+                else
+                {
+                    await Log(s.Message);
+                }
             }
         }
 
@@ -379,6 +414,15 @@ namespace VAGino.ViewModels
             }
 
             await _serialBroker.WriteCommandAsync(cmd);
+            await Log(cmd);
+        }
+
+        private async Task Log(string row)
+        {
+            await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                LogLines.Add($"{DateTime.Now.ToShortTimeString()}: {row}");
+            });
         }
     }
 }

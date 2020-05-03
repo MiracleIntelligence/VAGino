@@ -17,7 +17,7 @@
     xmlns:local="using:VAGino"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-    xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+    xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls" xmlns:telerik="using:Telerik.UI.Xaml.Controls.Grid"
     mc:Ignorable="d">
     <Page.Resources>
         <SymbolIconSource x:Key="DeleteIcon" Symbol="Delete"/>
@@ -63,9 +63,9 @@
             <AppBarButton Icon="Play" Label="Connect" Command="{x:Bind ViewModel.ConnectCommand, Mode=OneWay}"/>
             <AppBarButton Icon="Stop" Label="Disconnect" Command="{x:Bind ViewModel.DisconnectCommand, Mode=OneWay}"/>
             <AppBarSeparator/>
-            <AppBarButton Icon="Delete" Label="Delete records" Click="{x:Bind DeleteAllGroups}"/>
-            <AppBarButton Icon="Filter" Label="Filter new" Click="{x:Bind FilterNew}"/>
-            <AppBarButton Icon="Clear" Label="Clear" Click="{x:Bind ClearList}"/>
+            <AppBarButton Icon="Delete" Label="Clear list" Click="{x:Bind DeleteAllGroups}"/>
+            <AppBarButton Icon="Filter" Label="Clear list and filter new" Click="{x:Bind FilterNew}"/>
+            <AppBarButton Icon="Clear" Label="Clear all history" Click="{x:Bind ClearList}"/>
 
             <!--<AppBarToggleButton Icon="Shuffle" Label="Shuffle" Click="AppBarButton_Click" />-->
             <AppBarSeparator/>
@@ -101,14 +101,72 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="50"/>
-                    <RowDefinition Height="100"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="200"/>
                     <ColumnDefinition Width="200"/>
                 </Grid.ColumnDefinitions>
-                <controls:DataGrid x:Name="DataGridGroupd" 
+                <telerik:RadDataGrid Grid.Row="1" 
+                                 x:Name="dataGrid" 
+                                 UserFilterMode="Disabled"      
+                                 AutoGenerateColumns="False"
+                                 ItemsSource="{Binding Data, Source={StaticResource Model}}"  
+                                 FontSize="{StaticResource ControlContentThemeFontSize}">
+                    <telerikGrid:RadDataGrid.Columns>
+                        <telerikGrid:DataGridTextColumn PropertyName="FirstName"/>
+                        <telerikGrid:DataGridTextColumn PropertyName="LastName"/>
+                        <telerikGrid:DataGridTextColumn PropertyName="CountryName" Header="Country"/>
+                        <telerikGrid:DataGridTextColumn PropertyName="City"/>
+                        <telerikGrid:DataGridTextColumn PropertyName="PostalCode" Header="Postal Code"/>
+                        <telerikGrid:DataGridTextColumn PropertyName="PhoneNumber" Header="Phone"/>
+                    </telerikGrid:RadDataGrid.Columns>
+                </telerik:RadDataGrid>
+                <VisualStateManager.VisualStateGroups>
+                    <VisualStateGroup>
+                        <VisualState>
+                            <VisualState.StateTriggers>
+                                <AdaptiveTrigger MinWindowWidth="867" />
+                            </VisualState.StateTriggers>
+                            <VisualState.Setters>
+                                <Setter Target="dataGrid.UserEditMode" Value="Inline"/>
+                                <Setter Target="clearButton.Content">
+                                    <Setter.Value>
+                                        <TextBlock>
+                                    <Run FontWeight="Bold" FontFamily="Segoe UI Symbol">
+                                        &#xE0A4;
+                                    </Run>
+                                    <Run/>
+                                    <Run FontWeight="Normal">
+                                         Clear Filter
+                                    </Run>
+                                        </TextBlock>
+                                    </Setter.Value>
+                                </Setter>
+                            </VisualState.Setters>
+                        </VisualState>
+                        <VisualState>
+                            <VisualState.StateTriggers>
+                                <AdaptiveTrigger MinWindowWidth="0" />
+                            </VisualState.StateTriggers>
+                            <VisualState.Setters>
+                                <Setter Target="dataGrid.UserEditMode" Value="External"/>
+                                <Setter Target="clearButton.Content">
+                                    <Setter.Value>
+                                        <TextBlock>
+                                    <Run FontWeight="Bold" FontFamily="Segoe UI Symbol">
+                                        &#xE0A4;
+                                    </Run>
+                                        </TextBlock>
+                                    </Setter.Value>
+                                </Setter>
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateManager.VisualStateGroups>
+
+                <!--<controls:DataGrid x:Name="DataGridGroupd" 
                                    LoadingRowGroup="OnLoadingRowGroup" 
                                    RowGroupHeaderPropertyNameAlternative="ID"
                                    Loaded="OnDataGridLoaded"
@@ -145,7 +203,7 @@
                             </controls:DataGridTextColumn.EditingElementStyle>
                         </controls:DataGridTextColumn>
                     </controls:DataGrid.Columns>
-                </controls:DataGrid>
+                </controls:DataGrid>-->
                 <RelativePanel x:Name="RelativePanelFilters"
                                Grid.Column="1"
                                Grid.RowSpan="3" 
@@ -181,6 +239,8 @@
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="x:String">
                                 <SwipeControl x:Name="ListViewSwipeContainer"
+                                              IsRightTapEnabled="True"
+                                              RightTapped="ListViewSwipeContainer_RightTapped"
                           RightItems="{StaticResource ExecuteDelete}"
                           Height="30">
                                     <TextBlock Text="{x:Bind}"                                            
@@ -203,17 +263,27 @@
                         <Run Text="%"/>
                     </TextBlock>
                 </StackPanel>
-                <StackPanel Grid.Row="2"
+                <StackPanel x:Name="stackPanelButtons" 
+                            Grid.Row="2"
                             Grid.Column="2"
                             Style="{ThemeResource VAGinoStackPanel}">
-                    <Button x:Name="BtnLFWD"
+                    <Button x:Name="BtnLFWU"
                             Style="{ThemeResource VAGinoButtonStyle}"
                             HorizontalAlignment="Center"
+                            Command="{x:Bind ViewModel.SendRawCommand}"
+                            CommandParameter="LFWU:5"
+                            Content="LFW UP"/>
+                    <Button x:Name="btnLFWD"
+                            Style="{ThemeResource VAGinoButtonStyle}"
+                            HorizontalAlignment="Center"
+                            Command="{x:Bind ViewModel.SendRawCommand, Mode=OneWay}"
+                            CommandParameter="LFWD:5"
                             Content="LFW Down"/>
                 </StackPanel>
                 <RelativePanel  x:Name="RelativePanelConsole"
                                 Grid.Row="1"
                                 Grid.RowSpan="2"
+                                MaxHeight="170"
                                 Style="{ThemeResource VAGinoRelativePanel}">
                     <TextBox x:Name="TBCommand"
                              RelativePanel.AlignLeftWithPanel="True"
@@ -230,7 +300,18 @@
                             CommandParameter="{Binding Text, ElementName=TBCommand}"
                             />
 
-                    <ScrollViewer x:Name="SVConsole"
+                    <ListBox x:Name="listBoxConsole"
+                             ItemsSource="{x:Bind ViewModel.LogLines}"
+                             FontSize="12"
+                             RelativePanel.Below="TBCommand"
+                                  Background="Black"
+                                  RelativePanel.AlignLeftWithPanel="True"
+                                  RelativePanel.AlignRightWithPanel="True"
+                                  RelativePanel.AlignBottomWithPanel="True">
+                        
+                    </ListBox>
+
+                    <!--<ScrollViewer x:Name="SVConsole"
                                   MinHeight="100"
                                   RelativePanel.Below="TBCommand"
                                   Background="Black"
@@ -245,7 +326,7 @@
                                        HorizontalAlignment="Stretch"                                       
                                        VerticalAlignment="Stretch"
                                        Width="500"/>
-                    </ScrollViewer>
+                    </ScrollViewer>-->
 
                 </RelativePanel>
             </Grid>

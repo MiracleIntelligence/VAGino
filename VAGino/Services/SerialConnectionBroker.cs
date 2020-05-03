@@ -122,6 +122,7 @@ namespace VAGino.Services
             if (cmd == 1)
             {
                 var id = BitConverter.ToInt32(serialData, ID_INDEX);
+                                
                 var dlc = serialData[DLC_INDEX];
                 if (serialData.Length != DLC_INDEX + dlc + 1)
                 {
@@ -144,7 +145,9 @@ namespace VAGino.Services
             else
             {
                 string text = System.Text.Encoding.UTF8.GetString(serialData.Skip(1).ToArray());
-                ProcessMessage(text);
+                StringBuilder stringBuilder = new StringBuilder("DBG:");
+                stringBuilder.Append(text);
+                ProcessMessage(stringBuilder.ToString());
             }
         }
 
